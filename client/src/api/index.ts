@@ -1,5 +1,5 @@
-// 开发环境用 Vite proxy，生产部署设置 VITE_API_URL
-const BASE = (import.meta as any).env?.VITE_API_URL || '/api'
+// 开发环境用 Vite proxy，生产部署构建时设置 VITE_API_URL=https://xxx/api
+const BASE = import.meta.env.VITE_API_URL as string || '/api'
 
 async function request(url: string, options: RequestInit = {}) {
   const res = await fetch(`${BASE}${url}`, {
