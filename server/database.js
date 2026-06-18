@@ -10,8 +10,8 @@ const HERB_CODES = {
   '黄芪': 'HQ', '党参': 'DS', '连翘': 'LQ', '柴胡': 'CH', '远志': 'YZ', '黄芩': 'HS'
 };
 
-// 溯源扫描基础URL
-const TRACE_BASE = process.env.TRACE_BASE_URL || 'http://localhost:5173/trace/';
+// 溯源扫描基础URL - 部署时自动使用GitHub Pages，本地开发用localhost
+const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.RAILWAY_SERVICE_ID ? 'https://zxx1021.github.io/diyi-herb-trace/trace/' : 'http://localhost:5173/trace/');
 
 let db;
 
