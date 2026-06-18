@@ -32,19 +32,21 @@
           </div>
         </div>
         <div class="card" style="text-align:center">
-          <h3 style="margin-bottom:16px;font-size:16px;">一药一码 · 溯源二维码</h3>
-          <div style="display:flex;justify-content:center;align-items:center">
-            <img v-if="batch.qr_code_data" :src="batch.qr_code_data" style="width:200px;height:200px" alt="溯源二维码" />
-            <div v-else style="width:200px;height:200px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;color:#999">
-              {{ batch.batch_code }}
+          <h3 style="margin-bottom:16px;font-size:16px;">批次二维码</h3>
+          <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <img v-if="qrCodes.trace" :src="qrCodes.trace" style="width:120px;height:120px;border:2px solid var(--sage);border-radius:10px;padding:6px" />
+              <span style="font-size:11px;color:var(--sage);font-weight:700">药码 · 溯源信息</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <img v-if="qrCodes.farmer" :src="qrCodes.farmer" style="width:120px;height:120px;border:2px solid var(--seal);border-radius:10px;padding:6px" />
+              <span style="font-size:11px;color:var(--seal);font-weight:700">农码 · 种植记录</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <img v-if="qrCodes.env" :src="qrCodes.env" style="width:120px;height:120px;border:2px solid #1565c0;border-radius:10px;padding:6px" />
+              <span style="font-size:11px;color:#1565c0;font-weight:700">境码 · 环境监测</span>
             </div>
           </div>
-          <p style="margin-top:12px;color:#888;font-size:13px">
-            扫描二维码查看完整溯源信息
-          </p>
-          <p style="color:#1565c0;font-weight:600;font-size:14px">
-            {{ batch.batch_code }}
-          </p>
         </div>
       </div>
 
@@ -266,7 +268,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { batchApi, envApi, growthApi } from '../api'
 
@@ -279,6 +281,13 @@ const envRecords = ref<any[]>([])
 const growthRecords = ref<any[]>([])
 const showEnvModal = ref(false)
 const showGrowthModal = ref(false)
+
+const qrCodes = computed(() => {
+  try {
+    if (batch.value?.qr_code_data) return JSON.parse(batch.value.qr_code_data)
+  } catch(e) {}
+  return {}
+})
 
 const envForm = ref({
   temperature: '', humidity: '', light_intensity: '',
