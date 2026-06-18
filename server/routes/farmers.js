@@ -4,7 +4,7 @@ const { getDb } = require('../database');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 
-const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.RAILWAY_SERVICE_ID ? 'https://zxx1021.github.io/diyi-herb-trace/trace/' : 'http://localhost:5173/trace/');
+const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.RAILWAY_SERVICE_ID ? 'https://zxx1021.github.io/diyi-herb-trace/#/trace/' : 'http://localhost:5173/#/trace/');
 
 // 获取所有农户
 router.get('/', (req, res) => {
