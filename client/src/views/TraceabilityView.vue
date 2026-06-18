@@ -26,7 +26,7 @@
         <div class="hero-qr">
           <div class="qr-seal">
             <div class="qr-seal-inner">
-              <img v-if="batch.qr_code_data" :src="batch.qr_code_data" alt="溯源二维码" />
+              <img v-if="qrTrace" :src="qrTrace" alt="溯源二维码" />
               <span v-else class="qr-fallback">{{ batch.batch_code }}</span>
             </div>
             <div class="qr-seal-label">一药一码</div>
@@ -182,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { batchApi } from '../api'
 
@@ -190,6 +190,13 @@ const route = useRoute()
 const batchCode = route.params.batchCode as string
 const batch = ref<any>(null)
 const loading = ref(true)
+
+const qrTrace = computed(() => {
+  try {
+    const qr = JSON.parse(batch.value?.qr_code_data || '{}')
+    return qr.trace || batch.value?.qr_code_data
+  } catch(e) { return batch.value?.qr_code_data }
+})
 const stats = ref({ pest_control_count: 0, irrigation_count: 0, fertilize_count: 0, total_env_records: 0, total_growth_records: 0 })
 const envRecords = ref<any[]>([])
 const growthRecords = ref<any[]>([])
