@@ -139,11 +139,11 @@ async function seedData(db) {
   );
 
   const insertEnv = db.prepare(
-    'INSERT INTO environment_records (id, batch_id, temperature, humidity, light_intensity, soil_ph, soil_moisture, soil_nitrogen, soil_phosphorus, soil_potassium, air_quality_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO environment_records (id, batch_id, temperature, humidity, light_intensity, soil_ph, soil_moisture, soil_nitrogen, soil_phosphorus, soil_potassium, air_quality_index, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   );
 
   const insertGrowth = db.prepare(
-    'INSERT INTO growth_records (id, batch_id, farmer_id, record_type, description, operator, dosage, weather) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO growth_records (id, batch_id, farmer_id, record_type, description, operator, dosage, weather, recorded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
   );
 
   const insertFarmer = db.prepare(
@@ -203,18 +203,68 @@ async function seedData(db) {
       insertHerb.run(herb.id, herb.name, herb.scientific_name, herb.category, herb.origin, herb.description);
     }
     for (const bi of batchInfos) {
-      insertBatch.run(bi.batchId, bi.herbId, bi.batchCode, bi.qrImage, '2025-10-15', bi.loc, 36.5 + Math.random() * 3, 112.0 + Math.random() * 3, bi.idx);
-      for (const month of ['2025-04','2025-05','2025-06','2025-07','2025-08','2025-09']) {
-        insertEnv.run(uuidv4(), bi.batchId, (18+Math.random()*15).toFixed(1), (40+Math.random()*40).toFixed(1), (20000+Math.random()*60000).toFixed(0), (6+Math.random()*2).toFixed(1), (30+Math.random()*40).toFixed(1), (50+Math.random()*100).toFixed(1), (20+Math.random()*40).toFixed(1), (80+Math.random()*120).toFixed(1), (30+Math.random()*50).toFixed(0));
+      const harvestDates = ['2025-10-15','2025-10-20','2025-10-16','2025-11-01','2025-10-18','2025-10-22','2025-10-15','2025-10-28','2025-10-15','2025-10-20','2025-10-14','2025-10-25'];
+      const hdIdx = batchInfos.length - 1;
+      insertBatch.run(bi.batchId, bi.herbId, bi.batchCode, bi.qrImage, harvestDates[hdIdx % harvestDates.length], bi.loc, 36.5 + Math.random() * 3, 112.0 + Math.random() * 3, bi.idx);
+      // 环境监测：2024年4月到2026年6月，每月记录
+      for (let y = 2024; y <= 2026; y++) {
+        const endM = y === 2026 ? 6 : 12;
+        const startM = y === 2024 ? 4 : 1;
+        for (let m = startM; m <= endM; m++) {
+          const mm = String(m).padStart(2, '0');
+          const seasonTemp = m >= 6 && m <= 8 ? 22 + Math.random() * 12 : m >= 3 && m <= 5 ? 10 + Math.random() * 15 : -2 + Math.random() * 10;
+          insertEnv.run(uuidv4(), bi.batchId,
+            seasonTemp.toFixed(1),
+            (45 + Math.random() * 35).toFixed(1),
+            Math.round(15000 + Math.random() * 65000),
+            (6.2 + Math.random() * 1.6).toFixed(1),
+            (35 + Math.random() * 35).toFixed(1),
+            (60 + Math.random() * 80).toFixed(1),
+            (25 + Math.random() * 30).toFixed(1),
+            (90 + Math.random() * 100).toFixed(1),
+            Math.round(25 + Math.random() * 55),
+            `${y}-${mm}-15 12:00:00`
+          );
+        }
       }
-      for (const op of [
-        {type:'浇灌',desc:'滴灌系统自动浇灌',operator:'张三',dosage:'500L/亩',weather:'晴'},
-        {type:'施肥',desc:'施用有机肥',operator:'李四',dosage:'200kg/亩',weather:'多云'},
-        {type:'除虫',desc:'生物防治-释放赤眼蜂',operator:'王五',dosage:'10000头/亩',weather:'阴'},
-        {type:'除虫',desc:'喷洒苦参碱植物源农药',operator:'王五',dosage:'200ml/亩',weather:'晴'},
-        {type:'浇灌',desc:'喷灌补水',operator:'张三',dosage:'300L/亩',weather:'晴'},
-        {type:'除草',desc:'人工除草',operator:'赵六',dosage:'-',weather:'晴'}
-      ]) { insertGrowth.run(uuidv4(), bi.batchId, null, op.type, op.desc, op.operator, op.dosage, op.weather); }
+      // 种植操作：2024年4月到2026年6月，按生长节律
+      const allOps = [
+        {d:'2024-04-10',type:'松土',desc:'深耕整地，施入基肥',operator:'刘大山',dosage:'3000kg有机肥/亩',weather:'晴'},
+        {d:'2024-04-20',type:'移栽',desc:'移栽种苗，株距20cm',operator:'王德发',dosage:'8000株/亩',weather:'多云'},
+        {d:'2024-05-05',type:'浇灌',desc:'移栽后首次浇灌定根水',operator:'王德发',dosage:'800L/亩',weather:'晴'},
+        {d:'2024-05-20',type:'除草',desc:'人工除草，松土保墒',operator:'刘大山',dosage:'-',weather:'阴'},
+        {d:'2024-06-15',type:'施肥',desc:'追施复合肥，促进苗期生长',operator:'李守田',dosage:'30kg/亩',weather:'多云'},
+        {d:'2024-06-28',type:'除虫',desc:'检查蚜虫，喷洒生物农药',operator:'赵建国',dosage:'150ml/亩',weather:'晴'},
+        {d:'2024-07-15',type:'浇灌',desc:'夏季高温抗旱浇灌',operator:'王德发',dosage:'1000L/亩',weather:'晴'},
+        {d:'2024-07-30',type:'除草',desc:'中耕除草，疏松土壤',operator:'刘大山',dosage:'-',weather:'阴'},
+        {d:'2024-08-15',type:'除虫',desc:'释放赤眼蜂防治螟虫',operator:'赵建国',dosage:'8000头/亩',weather:'多云'},
+        {d:'2024-08-28',type:'浇灌',desc:'秋季补水促根',operator:'王德发',dosage:'600L/亩',weather:'晴'},
+        {d:'2024-09-20',type:'施肥',desc:'追施钾肥，促进根系发育',operator:'李守田',dosage:'20kg/亩',weather:'多云'},
+        {d:'2024-10-10',type:'松土',desc:'秋耕培土，防寒准备',operator:'陈永福',dosage:'-',weather:'晴'},
+        {d:'2025-03-15',type:'浇灌',desc:'返青水，促进春季萌发',operator:'王德发',dosage:'700L/亩',weather:'晴'},
+        {d:'2025-03-28',type:'施肥',desc:'春季追肥，施用腐熟农家肥',operator:'李守田',dosage:'1000kg/亩',weather:'多云'},
+        {d:'2025-04-20',type:'除草',desc:'春季人工除草',operator:'刘大山',dosage:'-',weather:'晴'},
+        {d:'2025-05-10',type:'除虫',desc:'喷洒苦参碱防治蚜虫',operator:'赵建国',dosage:'200ml/亩',weather:'阴'},
+        {d:'2025-05-25',type:'浇灌',desc:'花期补水',operator:'王德发',dosage:'500L/亩',weather:'多云'},
+        {d:'2025-06-15',type:'施肥',desc:'花果期追施磷钾肥',operator:'李守田',dosage:'25kg/亩',weather:'晴'},
+        {d:'2025-07-05',type:'除虫',desc:'检查红蜘蛛，喷施生物制剂',operator:'赵建国',dosage:'180ml/亩',weather:'晴'},
+        {d:'2025-07-20',type:'浇灌',desc:'雨季排水后补浇',operator:'王德发',dosage:'400L/亩',weather:'小雨'},
+        {d:'2025-08-10',type:'除草',desc:'清除田间杂草',operator:'刘大山',dosage:'-',weather:'多云'},
+        {d:'2025-08-28',type:'除虫',desc:'秋季病虫害综合防治',operator:'赵建国',dosage:'160ml/亩',weather:'晴'},
+        {d:'2025-09-15',type:'施肥',desc:'采收前追施微量元素肥',operator:'李守田',dosage:'15kg/亩',weather:'阴'},
+        {d:'2025-10-01',type:'松土',desc:'采前松土，便于采收',operator:'陈永福',dosage:'-',weather:'晴'},
+        {d:'2025-10-15',type:'采摘',desc:'秋季集中采收',operator:'张老三',dosage:'-',weather:'晴'},
+        {d:'2025-10-25',type:'浇灌',desc:'采后补水恢复',operator:'王德发',dosage:'500L/亩',weather:'多云'},
+        {d:'2025-11-10',type:'松土',desc:'冬季封冻前培土防寒',operator:'陈永福',dosage:'-',weather:'阴'},
+        {d:'2026-03-20',type:'浇灌',desc:'春季返青浇灌',operator:'王德发',dosage:'650L/亩',weather:'晴'},
+        {d:'2026-04-05',type:'施肥',desc:'春季追施有机复合肥',operator:'李守田',dosage:'800kg/亩',weather:'多云'},
+        {d:'2026-05-01',type:'除虫',desc:'蚜虫高发期喷药防治',operator:'赵建国',dosage:'170ml/亩',weather:'晴'},
+        {d:'2026-05-18',type:'除草',desc:'人工拔除田间杂草',operator:'刘大山',dosage:'-',weather:'阴'},
+        {d:'2026-06-10',type:'浇灌',desc:'夏季高温保墒补水',operator:'王德发',dosage:'800L/亩',weather:'晴'},
+      ];
+      for (const op of allOps) {
+        insertGrowth.run(uuidv4(), bi.batchId, null, op.type, op.desc, op.operator, op.dosage, op.weather, op.d + ' 08:00:00');
+      }
     }
     for (const fi of farmerInfos) {
       if (fi.batchId) insertFarmer.run(fi.farmerId, fi.name, fi.phone, fi.location, fi.batchId, fi.qrData);
