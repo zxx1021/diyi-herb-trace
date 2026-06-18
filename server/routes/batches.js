@@ -8,8 +8,8 @@ const HERB_CODES = {
   '黄芪': 'HQ', '党参': 'DS', '连翘': 'LQ', '柴胡': 'CH', '远志': 'YZ', '黄芩': 'HS'
 };
 
-// 溯源扫描基础URL — Railway部署自动用Pages，本地用localhost
-const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.RAILWAY_SERVICE_ID ? 'https://zxx1021.github.io/diyi-herb-trace/trace/' : 'http://localhost:5173/trace/');
+// 溯源扫描基础URL — Railway用Pages hash路由，本地用localhost
+const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.RAILWAY_SERVICE_ID ? 'https://zxx1021.github.io/diyi-herb-trace/#/trace/' : 'http://localhost:5173/#/trace/');
 
 // 获取所有批次
 router.get('/', (req, res) => {
