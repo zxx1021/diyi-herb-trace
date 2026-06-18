@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: diyi-herb-api
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: TRACE_BASE_URL
+        value: https://zxx1021.github.io/diyi-herb-trace/trace/
+      - key: NODE_ENV
+        value: production
