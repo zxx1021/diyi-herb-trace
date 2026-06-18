@@ -60,6 +60,16 @@ const router = createRouter({
       component: () => import('../views/FarmerEntry.vue')
     },
     {
+      path: '/batch-entry/:batchId',
+      name: 'batch-entry',
+      component: () => import('../views/BatchEntry.vue')
+    },
+    {
+      path: '/batch-env/:batchId',
+      name: 'batch-env',
+      component: () => import('../views/BatchEnv.vue')
+    },
+    {
       path: '/trace/:batchCode',
       name: 'traceability',
       component: () => import('../views/TraceabilityView.vue')
