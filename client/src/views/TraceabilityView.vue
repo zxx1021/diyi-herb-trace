@@ -1,5 +1,5 @@
 <template>
-  <div class="trace-page">
+  <div class="trace-page" data-version="v2-standalone">
     <!-- 加载态 -->
     <div v-if="loading" class="trace-loading">
       <div class="spinner"></div>
@@ -17,22 +17,11 @@
     <div v-else class="trace-body">
       <!-- ── 头部印章区 ── -->
       <header class="trace-hero">
-        <div class="hero-text">
-          <div class="hero-badge">山西道地药材</div>
-          <h1>{{ batch.herb_name }}</h1>
-          <p class="hero-latin">{{ batch.scientific_name }}</p>
-          <p class="hero-origin">{{ batch.herb_origin }} · {{ batch.location }}</p>
-        </div>
-        <div class="hero-qr">
-          <div class="qr-seal">
-            <div class="qr-seal-inner">
-              <img v-if="qrTrace" :src="qrTrace" alt="溯源二维码" />
-              <span v-else class="qr-fallback">{{ batch.batch_code }}</span>
-            </div>
-            <div class="qr-seal-label">一药一码</div>
-          </div>
-          <p class="qr-code-text">{{ batch.batch_code }}</p>
-        </div>
+        <div class="hero-badge">山西道地药材 · 一药一码</div>
+        <h1>{{ batch.herb_name }}</h1>
+        <p class="hero-latin">{{ batch.scientific_name }}</p>
+        <p class="hero-origin">{{ batch.herb_origin }} · {{ batch.location }}</p>
+        <p class="hero-code">{{ batch.batch_code }}</p>
       </header>
 
       <!-- ── 种植档案 ── -->
@@ -182,7 +171,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { batchApi } from '../api'
 
@@ -190,13 +179,6 @@ const route = useRoute()
 const batchCode = route.params.batchCode as string
 const batch = ref<any>(null)
 const loading = ref(true)
-
-const qrTrace = computed(() => {
-  try {
-    const qr = JSON.parse(batch.value?.qr_code_data || '{}')
-    return qr.trace || batch.value?.qr_code_data
-  } catch(e) { return batch.value?.qr_code_data }
-})
 const stats = ref({ pest_control_count: 0, irrigation_count: 0, fertilize_count: 0, total_env_records: 0, total_growth_records: 0 })
 const envRecords = ref<any[]>([])
 const growthRecords = ref<any[]>([])
@@ -232,45 +214,19 @@ onMounted(async () => {
 
 .trace-body { max-width: 720px; margin: 0 auto; padding: 20px 16px 40px; }
 
-/* ── 头部印章区 ── */
+/* ── 头部 ── */
 .trace-hero {
-  display: flex; justify-content: space-between; align-items: center; gap: 20px;
-  margin-bottom: 28px; padding-bottom: 28px;
+  text-align: center; margin-bottom: 28px; padding-bottom: 28px;
   border-bottom: 2px solid var(--stone);
 }
-@media (max-width: 480px) { .trace-hero { flex-direction: column; text-align: center; } }
-
 .hero-badge {
-  display: inline-block; padding: 4px 12px; border-radius: 20px;
-  background: var(--seal); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  display: inline-block; padding: 4px 14px; border-radius: 20px;
+  background: var(--sage); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 1px;
 }
-.hero-text h1 { font-size: 28px; margin: 8px 0 4px; font-weight: 800; letter-spacing: 2px; }
+.trace-hero h1 { font-size: 28px; margin: 12px 0 4px; font-weight: 800; letter-spacing: 2px; }
 .hero-latin { font-size: 13px; color: var(--ink-3); font-style: italic; }
 .hero-origin { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
-
-/* ── QR码印章 ── */
-.hero-qr { text-align: center; flex-shrink: 0; }
-.qr-seal {
-  padding: 12px; background: var(--white);
-  border: 3px solid var(--seal); border-radius: 16px;
-  display: inline-block; position: relative;
-}
-.qr-seal::after {
-  content: ''; position: absolute; inset: -7px; border: 1.5px solid var(--seal);
-  border-radius: 20px; opacity: .4; pointer-events: none;
-}
-.qr-seal-inner { width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; }
-.qr-seal-inner img { width: 100%; height: 100%; border-radius: 4px; }
-.qr-fallback { color: var(--ink-3); font-size: 11px; word-break: break-all; }
-.qr-seal-label {
-  margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--seal);
-  letter-spacing: 3px; text-transform: uppercase;
-}
-.qr-code-text { margin-top: 6px; font-size: 12px; color: var(--ink-3); font-family: monospace; }
-
-@media (max-width: 480px) {
-  .qr-seal-inner { width: 130px; height: 130px; }
-}
+.hero-code { margin-top: 6px; font-size: 12px; color: var(--ink-3); font-family: monospace; background: var(--sage-light); display: inline-block; padding: 2px 10px; border-radius: 4px; }
 
 /* ── 分区 ── */
 .trace-section { margin-bottom: 28px; }
