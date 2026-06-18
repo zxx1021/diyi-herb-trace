@@ -39,8 +39,9 @@
               <span style="font-size:11px;color:var(--sage);font-weight:700">药码 · 溯源信息</span>
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-              <img v-if="qrCodes.farmer" :src="qrCodes.farmer" style="width:120px;height:120px;border:2px solid var(--seal);border-radius:10px;padding:6px" />
-              <span style="font-size:11px;color:var(--seal);font-weight:700">农码 · 种植记录</span>
+              <img v-if="batchFarmer && batchFarmer.qr_code_data" :src="batchFarmer.qr_code_data" style="width:120px;height:120px;border:2px solid var(--seal);border-radius:10px;padding:6px" />
+              <div v-else style="width:120px;height:120px;border:2px dashed var(--stone);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:11px">暂无农户</div>
+              <span style="font-size:11px;color:var(--seal);font-weight:700">农码 · {{ batchFarmer ? batchFarmer.name+'添加' : '种植记录' }}</span>
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
               <img v-if="qrCodes.env" :src="qrCodes.env" style="width:120px;height:120px;border:2px solid #1565c0;border-radius:10px;padding:6px" />
@@ -270,10 +271,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { batchApi, envApi, growthApi } from '../api'
+import { batchApi, envApi, growthApi, farmerApi } from '../api'
 
 const route = useRoute()
 const batch = ref<any>(null)
+const batchFarmer = ref<any>(null)
 const loading = ref(true)
 const stats = ref({ pest_control_count: 0, irrigation_count: 0, fertilize_count: 0, total_env_records: 0, total_growth_records: 0 })
 const latestEnv = ref<any>(null)
@@ -318,6 +320,11 @@ async function loadData() {
     if (envRecords.value.length) {
       latestEnv.value = envRecords.value[0]
     }
+    // 加载本批次关联的农户
+    try {
+      const farmers = await farmerApi.list()
+      batchFarmer.value = farmers.find((f: any) => f.batch_id === id) || null
+    } catch(e) {}
   } catch (e) {
     console.error('加载批次失败:', e)
   } finally {
