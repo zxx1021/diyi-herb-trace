@@ -150,7 +150,22 @@ async function seedData(db) {
     'INSERT INTO farmers (id, name, phone, location, batch_id, qr_code_data) VALUES (?, ?, ?, ?, ?, ?)'
   );
 
-  // 预先生成所有批次的QR码数据
+  // 1. 先预生成农户ID和QR码（农户专属码）
+  const pagesBase = TRACE_BASE.replace('/#/trace/', '');
+  const farmerNames = [
+    { name: '张大山', phone: '138****6789', location: '浑源县恒山基地' },
+    { name: '李建国', phone: '139****7890', location: '长治市上党区基地' },
+    { name: '王守田', phone: '136****8901', location: '陵川县古郊乡基地' }
+  ];
+  const farmerInfos = [];
+  for (let i = 0; i < farmerNames.length; i++) {
+    const f = farmerNames[i];
+    const farmerId = uuidv4();
+    const farmerQR = await QRCode.toDataURL(`${pagesBase}/#/farmer/${farmerId}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
+    farmerInfos.push({ farmerId, name: f.name, phone: f.phone, location: f.location, qrData: farmerQR });
+  }
+
+  // 2. 生成批次QR码（药码+境码）+ 关联农户
   const batchInfos = [];
   for (const herb of herbs) {
     for (let i = 1; i <= 2; i++) {
@@ -166,86 +181,47 @@ async function seedData(db) {
           '黄芩': ['忻州市五寨基地', '晋城市陵川基地']
         };
         const loc = locations[herb.name] || ['山西种植基地A', '山西种植基地B'];
-        // 三种码：药码(溯源)、农码(种植记录)、境码(环境监测)
-        const pagesBase = TRACE_BASE.replace('/#/trace/', '');
         const qrTrace = await QRCode.toDataURL(`${TRACE_BASE}${batchCode}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
-        const qrFarmer = await QRCode.toDataURL(`${pagesBase}/#/batch-entry/${batchId}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
         const qrEnv = await QRCode.toDataURL(`${pagesBase}/#/batch-env/${batchId}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
-        const qrAll = JSON.stringify({ trace: qrTrace, farmer: qrFarmer, env: qrEnv });
+        // 存储：药码、境码、关联农户ID
+        const qrAll = JSON.stringify({ trace: qrTrace, env: qrEnv });
         batchInfos.push({
           batchId, herbId: herb.id, batchCode, qrImage: qrAll, loc: loc[i-1],
           idx: i === 1 ? '已采收' : '种植中', herbName: herb.name
         });
+        // 前3个批次各关联一个农户
+        const fiIdx = batchInfos.length - 1;
+        if (fiIdx < farmerInfos.length) {
+          farmerInfos[fiIdx].batchId = batchId;
+        }
     }
   }
 
-  // 事务插入数据
+  // 3. 事务插入所有数据
   const insertAll = db.transaction(() => {
     for (const herb of herbs) {
       insertHerb.run(herb.id, herb.name, herb.scientific_name, herb.category, herb.origin, herb.description);
     }
     for (const bi of batchInfos) {
-      insertBatch.run(
-        bi.batchId, bi.herbId, bi.batchCode, bi.qrImage, '2025-10-15',
-        bi.loc, 36.5 + Math.random() * 3, 112.0 + Math.random() * 3, bi.idx
-      );
-
-      // 环境监测数据
-      const months = ['2025-04', '2025-05', '2025-06', '2025-07', '2025-08', '2025-09'];
-      for (const month of months) {
-        insertEnv.run(
-          uuidv4(), bi.batchId,
-          (18 + Math.random() * 15).toFixed(1),
-          (40 + Math.random() * 40).toFixed(1),
-          (20000 + Math.random() * 60000).toFixed(0),
-          (6.0 + Math.random() * 2).toFixed(1),
-          (30 + Math.random() * 40).toFixed(1),
-          (50 + Math.random() * 100).toFixed(1),
-          (20 + Math.random() * 40).toFixed(1),
-          (80 + Math.random() * 120).toFixed(1),
-          (30 + Math.random() * 50).toFixed(0)
-        );
+      insertBatch.run(bi.batchId, bi.herbId, bi.batchCode, bi.qrImage, '2025-10-15', bi.loc, 36.5 + Math.random() * 3, 112.0 + Math.random() * 3, bi.idx);
+      for (const month of ['2025-04','2025-05','2025-06','2025-07','2025-08','2025-09']) {
+        insertEnv.run(uuidv4(), bi.batchId, (18+Math.random()*15).toFixed(1), (40+Math.random()*40).toFixed(1), (20000+Math.random()*60000).toFixed(0), (6+Math.random()*2).toFixed(1), (30+Math.random()*40).toFixed(1), (50+Math.random()*100).toFixed(1), (20+Math.random()*40).toFixed(1), (80+Math.random()*120).toFixed(1), (30+Math.random()*50).toFixed(0));
       }
-
-      // 种植操作记录
-      const operations = [
-        { type: '浇灌', desc: '滴灌系统自动浇灌', operator: '张三', dosage: '500L/亩', weather: '晴' },
-        { type: '施肥', desc: '施用有机肥', operator: '李四', dosage: '200kg/亩', weather: '多云' },
-        { type: '除虫', desc: '生物防治-释放赤眼蜂', operator: '王五', dosage: '10000头/亩', weather: '阴' },
-        { type: '除虫', desc: '喷洒苦参碱植物源农药', operator: '王五', dosage: '200ml/亩', weather: '晴' },
-        { type: '浇灌', desc: '喷灌补水', operator: '张三', dosage: '300L/亩', weather: '晴' },
-        { type: '除草', desc: '人工除草', operator: '赵六', dosage: '-', weather: '晴' },
-      ];
-      for (const op of operations) {
-        insertGrowth.run(uuidv4(), bi.batchId, null, op.type, op.desc, op.operator, op.dosage, op.weather);
-      }
+      for (const op of [
+        {type:'浇灌',desc:'滴灌系统自动浇灌',operator:'张三',dosage:'500L/亩',weather:'晴'},
+        {type:'施肥',desc:'施用有机肥',operator:'李四',dosage:'200kg/亩',weather:'多云'},
+        {type:'除虫',desc:'生物防治-释放赤眼蜂',operator:'王五',dosage:'10000头/亩',weather:'阴'},
+        {type:'除虫',desc:'喷洒苦参碱植物源农药',operator:'王五',dosage:'200ml/亩',weather:'晴'},
+        {type:'浇灌',desc:'喷灌补水',operator:'张三',dosage:'300L/亩',weather:'晴'},
+        {type:'除草',desc:'人工除草',operator:'赵六',dosage:'-',weather:'晴'}
+      ]) { insertGrowth.run(uuidv4(), bi.batchId, null, op.type, op.desc, op.operator, op.dosage, op.weather); }
     }
-
+    for (const fi of farmerInfos) {
+      if (fi.batchId) insertFarmer.run(fi.farmerId, fi.name, fi.phone, fi.location, fi.batchId, fi.qrData);
+    }
   });
-
-  // 种子农户 (QR码生成需async，放在事务外)
-  const farmerNames = [
-    { name: '张大山', phone: '138****6789', location: '浑源县恒山基地' },
-    { name: '李建国', phone: '139****7890', location: '长治市上党区基地' },
-    { name: '王守田', phone: '136****8901', location: '陵川县古郊乡基地' }
-  ];
-  const farmerInfos = [];
-  for (let i = 0; i < farmerNames.length; i++) {
-    const f = farmerNames[i];
-    const farmerId = uuidv4();
-    const targetBatch = batchInfos[i];
-    const farmerQR = await QRCode.toDataURL(`${TRACE_BASE}farmer/${farmerId}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
-    farmerInfos.push({ farmerId, name: f.name, phone: f.phone, location: f.location, batchId: targetBatch.batchId, qrData: farmerQR });
-  }
-
   insertAll();
-
-  // 插入农户（QR码已异步生成）
-  for (const fi of farmerInfos) {
-    insertFarmer.run(fi.farmerId, fi.name, fi.phone, fi.location, fi.batchId, fi.qrData);
-  }
-
-  console.log('种子数据已插入(含QR码+农户)');
+  console.log('种子数据已插入(药码+农码+境码)');
 }
 
 module.exports = { getDb, initDatabase };
