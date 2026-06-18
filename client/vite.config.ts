@@ -1,9 +1,8 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-// GitHub Pages 部署时设置 base 为仓库名，如 '/diyi-herb-trace/'
 export default defineConfig({
-  base: process.env.BASE_URL || '/',
+  base: '/diyi-herb-trace/',
   plugins: [vue()],
   server: {
     port: 5173,
