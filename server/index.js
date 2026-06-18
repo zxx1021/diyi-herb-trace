@@ -10,7 +10,7 @@ const growthRouter = require('./routes/growth');
 const farmersRouter = require('./routes/farmers');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // 中间件
 app.use(cors());
