@@ -114,7 +114,16 @@ async function initDatabase() {
   `);
 
   // 插入山西道地药材种子数据
-  const count = db.prepare('SELECT COUNT(*) as cnt FROM herbs').get();
+  let count = db.prepare('SELECT COUNT(*) as cnt FROM herbs').get();
+  // 数据库版本检查：DB_VERSION 改变时自动重建种子数据
+  const DB_VERSION = 2;
+  db.exec("CREATE TABLE IF NOT EXISTS _meta (key TEXT PRIMARY KEY, value TEXT)");
+  const oldVer = db.prepare("SELECT value FROM _meta WHERE key='version'").get();
+  if (!oldVer || parseInt(oldVer.value) !== DB_VERSION) {
+    db.exec("DELETE FROM growth_records; DELETE FROM environment_records; DELETE FROM farmers; DELETE FROM batches; DELETE FROM herbs; DELETE FROM _meta");
+    count = { cnt: 0 };
+    db.prepare("INSERT OR REPLACE INTO _meta VALUES('version',?)").run(String(DB_VERSION));
+  }
   if (count.cnt === 0) {
     await seedData(db);
   }
