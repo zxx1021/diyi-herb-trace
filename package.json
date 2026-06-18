@@ -1,8 +1,10 @@
 {
   "name": "diyi-herb-trace",
   "version": "1.0.0",
+  "description": "地宜本草溯源系统 - 山西道地药材一药一码",
   "scripts": {
-    "start": "node server/index.js"
+    "start": "cd server && node index.js",
+    "install": "cd server && npm install"
   },
   "engines": {
     "node": ">=18"
