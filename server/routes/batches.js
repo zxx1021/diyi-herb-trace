@@ -101,9 +101,12 @@ router.post('/', async (req, res) => {
 
   const id = uuidv4();
 
-  // 生成QR码 — 存入完整溯源URL，手机扫码即可打开
-  const qrData = `${TRACE_BASE}${batchCode}`;
-  const qrImage = await QRCode.toDataURL(qrData, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
+  // 生成三种QR码：药码(溯源)、农码(种植记录)、境码(环境监测)
+  const pagesBase = TRACE_BASE.replace('/#/trace/', '');
+  const qrTrace = await QRCode.toDataURL(`${TRACE_BASE}${batchCode}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
+  const qrFarmer = await QRCode.toDataURL(`${pagesBase}/#/batch-entry/${id}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
+  const qrEnv = await QRCode.toDataURL(`${pagesBase}/#/batch-env/${id}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
+  const qrImage = JSON.stringify({ trace: qrTrace, farmer: qrFarmer, env: qrEnv });
 
   db.prepare(
     'INSERT INTO batches (id, herb_id, batch_code, qr_code_data, harvest_date, location, latitude, longitude, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
