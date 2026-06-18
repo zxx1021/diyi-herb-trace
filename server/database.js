@@ -166,10 +166,14 @@ async function seedData(db) {
           '黄芩': ['忻州市五寨基地', '晋城市陵川基地']
         };
         const loc = locations[herb.name] || ['山西种植基地A', '山西种植基地B'];
-        const qrData = `${TRACE_BASE}${batchCode}`;
-        const qrImage = await QRCode.toDataURL(qrData, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
+        // 三种码：药码(溯源)、农码(种植记录)、境码(环境监测)
+        const pagesBase = TRACE_BASE.replace('/#/trace/', '');
+        const qrTrace = await QRCode.toDataURL(`${TRACE_BASE}${batchCode}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
+        const qrFarmer = await QRCode.toDataURL(`${pagesBase}/#/batch-entry/${batchId}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
+        const qrEnv = await QRCode.toDataURL(`${pagesBase}/#/batch-env/${batchId}`, { width: 400, margin: 2, errorCorrectionLevel: 'M' });
+        const qrAll = JSON.stringify({ trace: qrTrace, farmer: qrFarmer, env: qrEnv });
         batchInfos.push({
-          batchId, herbId: herb.id, batchCode, qrImage, loc: loc[i-1],
+          batchId, herbId: herb.id, batchCode, qrImage: qrAll, loc: loc[i-1],
           idx: i === 1 ? '已采收' : '种植中', herbName: herb.name
         });
     }
