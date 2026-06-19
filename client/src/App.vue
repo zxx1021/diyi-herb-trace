@@ -6,21 +6,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Layout from './components/Layout.vue'
 
-const route = useRoute()
+const router = useRouter()
 
-const standaloneRoutes = ['trace', 'batch-entry', 'batch-env', 'farmer']
-function isStandalone(hash: string) {
-  return standaloneRoutes.some(r => hash.includes(r))
-}
+// 同步检查 hash，router isReady 之前就确定
+const hash = window.location.hash
+const showLayout = ref(!/#\/(trace|batch-entry|batch-env|farmer)\//.test(hash))
 
-// 直接读 hash 判断，hash 路由下 route.path 固定为 '/'
-const showLayout = ref(!isStandalone(window.location.hash))
-
-watch(() => route.fullPath, () => {
-  showLayout.value = !isStandalone(window.location.hash)
+// router 就绪后再确认一次
+router.isReady().then(() => {
+  const h = window.location.hash
+  showLayout.value = !/#\/(trace|batch-entry|batch-env|farmer)\//.test(h)
 })
 </script>
