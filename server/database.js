@@ -10,8 +10,9 @@ const HERB_CODES = {
   '黄芪': 'HQ', '党参': 'DS', '连翘': 'LQ', '柴胡': 'CH', '远志': 'YZ', '黄芩': 'HS'
 };
 
-// 溯源扫描基础URL — PORT≠3001即为部署环境 vs 本地开发
-const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.PORT && process.env.PORT !== '3001' ? 'https://zxx1021.github.io/diyi-herb-trace/#/trace/' : 'http://localhost:5173/#/trace/');
+// 扫码URL — 部署用 Pages，本地用 localhost
+const PAGES_URL = process.env.PORT && process.env.PORT !== '3001' ? 'https://zxx1021.github.io/diyi-herb-trace' : 'http://localhost:5173';
+const TRACE_BASE = PAGES_URL + '/#/trace/';
 
 let db;
 
@@ -116,7 +117,7 @@ async function initDatabase() {
   // 插入山西道地药材种子数据
   let count = db.prepare('SELECT COUNT(*) as cnt FROM herbs').get();
   // 数据库版本检查：DB_VERSION 改变时自动重建种子数据
-  const DB_VERSION = 2;
+  const DB_VERSION = 4;
   db.exec("CREATE TABLE IF NOT EXISTS _meta (key TEXT PRIMARY KEY, value TEXT)");
   const oldVer = db.prepare("SELECT value FROM _meta WHERE key='version'").get();
   if (!oldVer || parseInt(oldVer.value) !== DB_VERSION) {
