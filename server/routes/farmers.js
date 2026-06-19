@@ -4,7 +4,7 @@ const { getDb } = require('../database');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 
-const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.PORT && process.env.PORT !== '3001' ? 'https://zxx1021.github.io/diyi-herb-trace/#/trace/' : 'http://localhost:5173/#/trace/');
+const PAGES_URL = process.env.PORT && process.env.PORT !== '3001' ? 'https://zxx1021.github.io/diyi-herb-trace' : 'http://localhost:5173';
 
 // 获取所有农户
 router.get('/', (req, res) => {
@@ -63,7 +63,7 @@ router.post('/', async (req, res) => {
   if (!name) return res.status(400).json({ error: '农户姓名为必填项' });
 
   const id = uuidv4();
-  const farmerQR = await QRCode.toDataURL(`${TRACE_BASE}farmer/${id}`, {
+  const farmerQR = await QRCode.toDataURL(`${PAGES_URL}/#/farmer/${id}`, {
     width: 400, margin: 2, errorCorrectionLevel: 'M'
   });
 
