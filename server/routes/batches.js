@@ -8,8 +8,8 @@ const HERB_CODES = {
   '黄芪': 'HQ', '党参': 'DS', '连翘': 'LQ', '柴胡': 'CH', '远志': 'YZ', '黄芩': 'HS'
 };
 
-// 溯源扫描基础URL — Railway用Pages hash路由，本地用localhost
-const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.PORT && process.env.PORT !== '3001' ? 'https://zxx1021.github.io/diyi-herb-trace/#/trace/' : 'http://localhost:5173/#/trace/');
+const PAGES_URL = process.env.PORT && process.env.PORT !== '3001' ? 'https://zxx1021.github.io/diyi-herb-trace' : 'http://localhost:5173';
+const TRACE_BASE = PAGES_URL + '/#/trace/';
 
 // 获取所有批次
 router.get('/', (req, res) => {
@@ -87,17 +87,22 @@ router.get('/code/:batchCode', (req, res) => {
 // 创建新批次并生成QR码
 router.post('/', async (req, res) => {
   const db = getDb();
-  const { herb_id, harvest_date, location, latitude, longitude, notes } = req.body;
+  const { herb_id, harvest_date, location, latitude, longitude, notes, custom_code, farmer_id } = req.body;
   if (!herb_id || !location) return res.status(400).json({ error: '药材和地点为必填项' });
 
   const herb = db.prepare('SELECT * FROM herbs WHERE id = ?').get(herb_id);
   if (!herb) return res.status(404).json({ error: '药材不存在' });
 
-  // 生成批次码
-  const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-  const prefix = HERB_CODES[herb.name] || herb.name.substring(0, 2).toUpperCase();
-  const seq = db.prepare("SELECT COUNT(*) as cnt FROM batches WHERE batch_code LIKE ?").get(`${prefix}%`).cnt + 1;
-  const batchCode = `${prefix}${dateStr}${String(seq).padStart(3, '0')}`;
+  // 生成批次码（支持自定义）
+  let batchCode;
+  if (custom_code && custom_code.trim()) {
+    batchCode = custom_code.trim();
+  } else {
+    const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const prefix = HERB_CODES[herb.name] || herb.name.substring(0, 2).toUpperCase();
+    const seq = db.prepare("SELECT COUNT(*) as cnt FROM batches WHERE batch_code LIKE ?").get(`${prefix}%`).cnt + 1;
+    batchCode = `${prefix}${dateStr}${String(seq).padStart(3, '0')}`;
+  }
 
   const id = uuidv4();
 
@@ -110,6 +115,11 @@ router.post('/', async (req, res) => {
   db.prepare(
     'INSERT INTO batches (id, herb_id, batch_code, qr_code_data, harvest_date, location, latitude, longitude, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
   ).run(id, herb_id, batchCode, qrImage, harvest_date || '', location, latitude || 0, longitude || 0, notes || '');
+
+  // 关联农户
+  if (farmer_id) {
+    db.prepare('UPDATE farmers SET batch_id = ? WHERE id = ?').run(id, farmer_id);
+  }
 
   const batch = db.prepare('SELECT * FROM batches WHERE id = ?').get(id);
   res.status(201).json(batch);
