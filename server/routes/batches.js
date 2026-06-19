@@ -9,7 +9,7 @@ const HERB_CODES = {
 };
 
 // 溯源扫描基础URL — Railway用Pages hash路由，本地用localhost
-const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.RAILWAY_SERVICE_ID ? 'https://zxx1021.github.io/diyi-herb-trace/#/trace/' : 'http://localhost:5173/#/trace/');
+const TRACE_BASE = process.env.TRACE_BASE_URL || (process.env.PORT && process.env.PORT !== '3001' ? 'https://zxx1021.github.io/diyi-herb-trace/#/trace/' : 'http://localhost:5173/#/trace/');
 
 // 获取所有批次
 router.get('/', (req, res) => {
