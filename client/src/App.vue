@@ -1,26 +1,26 @@
 <template>
-  <div v-if="!ready" class="app-loader"></div>
-  <Layout v-else-if="useLayout">
+  <Layout v-if="showLayout">
     <router-view />
   </Layout>
   <router-view v-else />
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import Layout from './components/Layout.vue'
 
 const route = useRoute()
-const router = useRouter()
-const ready = ref(false)
 
-router.isReady().then(() => { ready.value = true })
+const standaloneRoutes = ['trace', 'batch-entry', 'batch-env', 'farmer']
+function isStandalone(hash: string) {
+  return standaloneRoutes.some(r => hash.includes(r))
+}
 
-const standalonePages = ['traceability', 'batch-entry', 'batch-env', 'farmer-entry']
-const useLayout = computed(() => !standalonePages.includes(route.name as string))
+// 直接读 hash 判断，hash 路由下 route.path 固定为 '/'
+const showLayout = ref(!isStandalone(window.location.hash))
+
+watch(() => route.fullPath, () => {
+  showLayout.value = !isStandalone(window.location.hash)
+})
 </script>
-
-<style>
-.app-loader { min-height: 100vh; background: var(--paper); }
-</style>
